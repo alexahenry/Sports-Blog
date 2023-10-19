@@ -1,0 +1,188 @@
+---
+title: "Third and Six"
+author: "Alexa Henry"
+date: '2023-10-17'
+categories: [football, big ten]
+image: "image.png"
+format: 
+  html:
+    code-fold: true
+---
+
+```{r}
+library(tidyverse)
+library(cfbfastR)
+```
+
+### Load play by play data
+
+```{r}
+plays <- load_cfb_pbp(seasons = c(2019, 2020, 2021, 2022, 2023))
+```
+
+```{r}
+third_and_six <- plays |> filter(down==3, distance==6)
+```
+
+```{r}
+third_and_six |> 
+  group_by (play_type) |>
+  summarise(
+    plays = n()
+  )
+```
+
+
+```{r}
+rush_plays <- c("Rush", "Rushing Touchdown")
+  
+third_and_six |>
+  filter(play_type %in% rush_plays) |> 
+  summarise(
+    plays = n()
+  )
+```
+
+
+```{r}
+2459 / 11655 *100
+```
+21.098 or 21%
+
+```{r}
+third_and_six |>
+  filter(play_type %in% rush_plays) |>
+  filter(yards_to_goal < 50) |> 
+  summarise(
+    plays = n(),
+    min = min(yards_gained),
+    max = max(yards_gained),
+    median = median(yards_gained),
+    yards_gainedAvg = mean(yards_gained)
+  )
+```
+In the first go-around of the code, it just gave me an average of 6 which to me didn't seem entirely right. Added in min and max and saw that the max was 79 yards which means there are some outlier plays. Added in a Median which gave a more accurate gain of yards. 
+
+From there, I added in a filter of less than 50 yards. This gave me an average of 5 yards but still the same median. However, the max is 42. Which I think is more reasonable. 
+
+I then added in plays count and it said there are 1,401 plays where third and six are less than 50 yards. I think this is a better model than just looking at just the average because now it shows that out of 11,655 plays only 1,401 are third and six plays. 
+
+```{r}
+third_and_six |>
+  filter(play_type %in% rush_plays) |>
+  filter(yards_to_goal < 50) |> 
+  group_by(pos_team) |>
+  summarise(
+    plays = n(),
+    min = min(yards_gained),
+    max = max(yards_gained),
+    median = median(yards_gained),
+    yards_gainedAvg = mean(yards_gained)
+  ) |>
+  arrange(desc(plays))
+```
+I found that Air Force runs third and six plays that are less than 50 yards about 21 times which is the most out of all the teams. 
+
+```{r}
+third_and_six |>
+  filter(play_type %in% rush_plays) |>
+  filter(yards_to_goal < 30) |> 
+  filter (pos_team == "Maryland") |>
+  filter (period == 4) |>
+  summarise(
+    plays = n(),
+    min = min(yards_gained),
+    max = max(yards_gained),
+    median = median(yards_gained),
+    yards_gainedAvg = mean(yards_gained)
+  )
+```
+Looking at the fact there are only 2 times that Maryland has been in a third and six situation where they were on the opponents territory, it basically looks like that Maryland doesn't find themselves in these situations a lot. Which would make sense that what happened against Illinois...happened. 
+
+Graphic 
+
+```{r}
+plays_third_and_six <- third_and_six |>
+  group_by(pos_team) |>
+  filter(play_type %in% rush_plays) |>
+  filter(yards_to_goal < 50) |>
+  filter (period == 4) |>
+  summarise(
+    plays = n(),
+    min = min(yards_gained),
+    max = max(yards_gained),
+    median = median(yards_gained),
+    yards_gainedAvg = mean(yards_gained)
+  ) |> arrange (desc(plays))
+```
+I'm trying to show the list with the teams with the most amount of plays. 
+
+```{r}
+plays_third_and_six <- third_and_six |>
+  group_by(pos_team) |>
+  filter(play_type %in% rush_plays) |>
+  filter(yards_to_goal < 50) |>
+  filter (period == 4) |>
+  summarise(
+    plays = n()
+  ) |> arrange (desc(plays))
+```
+I took out the yards gained and the averages because for some reason my list was organizing by yards gained instead of plays. 
+
+```{r}
+plays_third_and_six |>
+  arrange(desc(plays)) |>
+  top_n(10)|>
+  select (pos_team, plays)
+```
+
+
+```{r}
+top10 <- plays_third_and_six |>
+  arrange(desc(plays)) |>
+  head(10) |> 
+  select(pos_team, plays)
+```
+I don't know if I'm right but I think R is seeing that some teams have the same amount of plays so it's thinking that they are also in the top 10. But I'm not sure why it's showing me more than ten teams.
+```{r}
+library(ggplot2)
+library(scales)
+```
+
+```{r}
+ggplot() + 
+  geom_bar(
+    data=top10, 
+    aes(x=pos_team, weight=plays)) + scale_y_continuous(labels=comma)
+```
+
+
+```{r}
+ggplot() + 
+  geom_bar(
+    data=top10, 
+    aes(
+      x=reorder(pos_team, plays), 
+      weight=plays
+      )
+    )
+```
+
+
+```{r}
+ggplot() + 
+  geom_bar(
+    data=top10, 
+    aes(x=reorder(pos_team, plays),
+        weight=plays)) + 
+  scale_y_continuous(labels=comma) + 
+  labs(
+    title="Air Force Puts Themselves in Tight Situations Often", 
+    x="Team", 
+    y="Plays") + 
+  theme_minimal() + 
+  coord_flip()
+```
+So, in conclusion, I found that Air Force ends up being the team that has run the most amount of third and six plays. Seemlingly, it means that Air Force also knows how to run the ball more and knows how to get themselves out of those situations. It's interesting because ESPN just ran an article about how Air Force is the best school in Colorado. 
+
+Oddly enough, Prime Time and his team is also on this list. For them, I don't think this is a good thing considering they have had many inconsistencies when it comes to running the ball. Look at the Stanford game when they went into double overtime and basically gave that game away last minute. Maybe Colorado would benefit in NOT finding themselves in these situations. Whereas, their state neighbor has actually benefit from those third and six plays. 
